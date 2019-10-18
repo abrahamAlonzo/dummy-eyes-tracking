@@ -35,6 +35,8 @@ alphabet = {
 def CharacterAudio(character):
     playsound('alphabet/' + alphabet[character] + '.mp3' )
       
+def InitialDialog():
+    playsound('dialogs/LeaveDialog.mp3')
 
 if __name__ == '__main__':
     CharacterAudio('a')
