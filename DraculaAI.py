@@ -1,5 +1,5 @@
 from BarcodeDecoder import decode
-from DraculaConversation import CharacterAudio, InitialDialog
+from DraculaConversation import CharacterAudio, InitialDialog, LeaveDialog
 import numpy as np
 import cv2
 import time
@@ -33,6 +33,8 @@ class VideoStream:
         self.video = 'video'
         self.eye_cascade = ''
         self.face_cascade = ''
+        self.displayVideo = True
+        self.eyeRecognition = False
 
     def EyeRecognitionInitialization(self):
         self.eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
@@ -40,12 +42,20 @@ class VideoStream:
     def FaceRecognitionInitialization(self):
         self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
+    def MotorController(self):
+        return
+
     def TakeVideo(self):
         capture = cv2.VideoCapture(self.camera)
-        #self.EyeRecognitionInitialization()
+
+        if self.eyeRecognition == True:
+            self.EyeRecognitionInitialization()
+
         self.FaceRecognitionInitialization()
         while(True):
+            time.sleep(0.1)
             ret, self.frame = capture.read()
+            self.MotorController()
             print(self.statusConstantsLog[self.status])
             if (self.status == self.statusConstants['barcodeRecognition']):
                 decodedObjects = decode(self.frame)
@@ -66,19 +76,23 @@ class VideoStream:
                 else:
                     self.faceRecognited = False
                     #print('faceRecognited False')
-                for (x,y,w,h) in faces:
-                    self.frame = cv2.rectangle(self.frame,(x,y),(x+w,y+h),(255,0,0),2)
-                    roi_gray = gray[y:y+h, x:x+w]
-                    roi_color = self.frame[y:y+h, x:x+w]
-                    #self.EyeRecognition(roi_gray, roi_color)
+                if self.displayVideo == True:
+                    for (x,y,w,h) in faces:
+                        self.frame = cv2.rectangle(self.frame,(x,y),(x+w,y+h),(255,0,0),2)
+                        roi_gray = gray[y:y+h, x:x+w]
+                        roi_color = self.frame[y:y+h, x:x+w]
+                        if self.eyeRecognition == True:
+                            self.EyeRecognition(roi_gray, roi_color)
             elif (self.status == self.statusConstants['initialDialog']):
                 InitialDialog()
                 self.status = self.statusConstants['barcodeRecognition']
             elif (self.status == self.statusConstants['LeaveDialog']):
                 time.sleep(2)
+                LeaveDialog()
                 self.status = self.statusConstants['faceRecognition']
-                
-            cv2.imshow(self.video, self.frame)
+            if self.displayVideo ==True:
+                cv2.imshow(self.video, self.frame)
+
             if cv2.waitKey(1) == 27:
                 break
     
