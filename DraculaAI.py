@@ -3,7 +3,8 @@ from DraculaConversation import CharacterAudio, InitialDialog, LeaveDialog
 import numpy as np
 import cv2
 import time
-
+import logging
+import threading
 
 # Pending for motor controllers
 # Pending for sounds of dialogs and interactivity
@@ -26,7 +27,7 @@ class VideoStream:
             4: 'LeaveDialog'
         }
         self.frame = []
-        self.camera = 1
+        self.camera = 0
         self.status = self.statusConstants['faceRecognition']
         self.faceRecognited = False
         self.barcode = ''
@@ -134,19 +135,38 @@ def display(im, decodedObjects):
     cv2.imshow("Results", im)
     cv2.waitKey(0)
 
+def DraculaThread(*args):
+    Video = VideoStream()
+    Video.TakeVideo()
+
+def EyesThread():
+    #some python code for servo motor controlling with serial 
+    return
 
 # Main 
 if __name__ == '__main__':
-	#cam = cv2.VideoCapture(0)
-	#s, im = cam.read() # captures image
-	#cv2.imshow("Test Picture", im) # displays captured image
-	#cv2.imwrite("some2.png",im) # writes image test.bmp to disk
-	# imageBarcode = cv2.imread('barcode.png')
-	# decodedObjects = decode(imageBarcode)
-	# print(decodedObjects)
-	# display(imageBarcode, decodedObjects)
     Video = VideoStream()
     Video.TakeVideo()
+    #loggin config
+    # format = "%(asctime)s: %(message)s"
+    # logging.basicConfig(format=format, level=logging.INFO,
+    #                     datefmt="%H:%M:%S")
+
+    # logging.info("Main    : before creating thread")
+    # #thread config
+    # draculaAI = threading.Thread(target=DraculaThread, args=(1,))
+    # eyesMovement = threading.Thread(target=DraculaThread, args=(1,))
+    
+    # #initial of threading
+    # draculaAI.start()
+    # eyesMovement.start()
+    
+    # #end of execution
+    # logging.info("Main    : wait for the thread to finish")
+    # logging.info("Main    : all done")
+    
+
+    
 
 
 
