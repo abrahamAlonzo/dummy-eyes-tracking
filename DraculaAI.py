@@ -80,9 +80,12 @@ class VideoStream:
 
     def TakeVideo(self):
         capture = cv2.VideoCapture(self.camera)
+        capture.set(3, 640)
+        capture.set(4, 480)
         ret, self.frame = capture.read()
         self.frameWidth = self.frame.shape[1]
         self.frameHeight = self.frame.shape[0]
+        print('Width: ' + str(self.frameWidth) + ' ' + 'Height: ' + str(self.frameHeight))
         if self.eyeRecognition == True:
             self.EyeRecognitionInitialization()
 
@@ -99,6 +102,7 @@ class VideoStream:
                 print('Scanning BarCode')
                 decodedObjects = decode(self.frame)
                 self.barcode = decodedObjects
+                print(self.barcode)
                 if len(self.barcode) != 0:
                     for character in self.barcode:
                         print(character)
