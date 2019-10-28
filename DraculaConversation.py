@@ -1,4 +1,5 @@
 from PlayAudio import playsound
+from random import randint
 
 alphabet = {
     'A': 'A',
@@ -36,10 +37,27 @@ def CharacterAudio(character):
     playsound('alphabet/' + alphabet[character] + '.mp3' )
       
 def InitialDialog():
-    playsound('dialogs/LeaveDialog.mp3')
+    playsound('dialogs/InitialBarcodeDialog.mp3')
 
 def LeaveDialog():
-    playsound('alphabet/A.mp3')
+    playsound('alphabet/LeaveDialog.mp3')
+
+def ContinueMovingDialog():
+    playsound('dialogs/SigueTuCamino.mp3')
+    
+
+def StareOneDialog():
+    randomConversationNumber = randint(0,2) 
+    if 0 == randomConversationNumber:
+        playsound('dialogs/SigueTuCamino2.mp3')
+    elif 1 == randomConversationNumber:
+        playsound('dialogs/SigueTuCamino3.mp3')
+    elif 2 == randomConversationNumber:
+        playsound('dialogs/SigueTuCamino4.mp3')
+
+
+def StareTwoDialog():
+    playsound('dialogs/PareceQueHoyCenoDoble.mp3')
 
 if __name__ == '__main__':
     CharacterAudio('a')

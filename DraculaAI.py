@@ -1,5 +1,5 @@
 from BarcodeDecoder import decode
-from DraculaConversation import CharacterAudio, InitialDialog, LeaveDialog
+from DraculaConversation import CharacterAudio, InitialDialog, LeaveDialog,ContinueMovingDialog, StareOneDialog, StareTwoDialog
 import numpy as np
 import cv2
 import time
@@ -17,29 +17,38 @@ class VideoStream:
             'faceRecognition': 1,
             'barcodeRecognition': 2,
             'scanIDDialog': 3,
-            'LeaveDialog': 4
+            'LeaveDialog': 4,
+            'profileRecognition': 5,
+            'StareOneDialog': 6,
+            'StareTwoDialog': 7
         }
         self.statusConstantsLog = {
             0: 'initialDialog',
             1: 'faceRecognition',
             2: 'barcodeRecognition',
             3: 'scanIDDialog',
-            4: 'LeaveDialog'
+            4: 'LeaveDialog',
+            5: 'profileRecognition',
+            6: 'StareOneDialog',
+            7: 'StareTwoDialog'
         }
         self.frame = []
         self.frameWidth = 0
         self.frameHeight = 0
         self.camera = 0
-        self.status = self.statusConstants['faceRecognition']
+        self.status = self.statusConstants['profileRecognition']
         self.faceRecognited = False
         self.barcode = ''
         self.video = 'video'
         self.eye_cascade = ''
         self.face_cascade = ''
+        self.profileFace_cascade = ''
         self.displayVideo = True
         self.eyeRecognition = False
-        self.debugFaceRecognition = True
-        self.eyeController = MotorController()
+        self.debugFaceRecognition = False
+        self.profileFaceRecognition = True
+        self.personFacingDracula = False
+        #self.eyeController = MotorController()
         self.leftEyeTheta = 0
         self.leftEyePhi = 0
         self.rightEyeTheta = 0
@@ -54,6 +63,9 @@ class VideoStream:
 
     def FaceRecognitionInitialization(self):
         self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+    def ProfileFaceRecognitionInitialization(self):
+        self.profileFace_cascade = cv2.CascadeClassifier('haarcascade_profileFace.xml')
 
     def MotorController(self):
         return
@@ -75,12 +87,16 @@ class VideoStream:
             self.EyeRecognitionInitialization()
 
         self.FaceRecognitionInitialization()
+        self.ProfileFaceRecognitionInitialization()
+        
         while(True):
 
             ret, self.frame = capture.read()
+            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             self.MotorController()
             #print(self.statusConstantsLog[self.status])
             if (self.status == self.statusConstants['barcodeRecognition']):
+                print('Scanning BarCode')
                 decodedObjects = decode(self.frame)
                 self.barcode = decodedObjects
                 if len(self.barcode) != 0:
@@ -88,18 +104,43 @@ class VideoStream:
                         print(character)
                         CharacterAudio(character)
                     self.status = self.statusConstants['LeaveDialog']
-                    
+            elif (self.status == self.statusConstants['profileRecognition']):
+                print('profileRecognition')
+                profileFaces = self.profileFace_cascade.detectMultiScale(gray, 1.3, 5)
+                if (len(profileFaces) != 0):
+                    print('profileRecognition recognized')
+                    ContinueMovingDialog()
+                    self.status = self.statusConstants['faceRecognition']
+                    print('Finish Conversation')
+                if self.displayVideo == True:
+                    for (x,y,w,h) in profileFaces:
+                        self.frame = cv2.rectangle(self.frame,(x,y),(x+w,y+h),(255,0,0),2)
+                        roi_gray = gray[y:y+h, x:x+w]
+                        roi_color = self.frame[y:y+h, x:x+w]
             elif (self.status == self.statusConstants['faceRecognition']):
-                gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
                 faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
                 #print(faces)
                 if (len(faces) != 0):
+                    print('Number of faces: '  + str(len(faces)))
+                    
                     self.faceRecognited = True
                     # if is higher something need to be triggered
                     self.faceIterationDrops = 0
                     #Just for debuggin porpusitiones of face recogn
+                    
                     if self.debugFaceRecognition == False:
-                        self.status = self.statusConstants['initialDialog']
+                        if self.personFacingDracula == False:
+                            if (len(faces) == 1):
+                                StareOneDialog()
+                                self.personFacingDracula = True
+                                #self.status = self.statusConstants['initialDialog']
+                            else:
+                                StareTwoDialog()
+                                self.personFacingDracula = True
+                                #self.status = self.statusConstants['initialDialog']
+                        else:
+                            self.personFacingDracula = False
+                            self.status = self.statusConstants['initialDialog']
                     else:
                         for (x,y,w,h) in faces:
                             #only see one person in the same time and in a certain velocity
@@ -109,8 +150,8 @@ class VideoStream:
                                 self.yFacePosition = y
                                 self.leftEyeTheta = self.Translate(x, 0, self.frameWidth, 0, 185) 
                                 self.leftEyePhi = self.Translate(x, 0, self.frameHeight, 0, 185) 
-                        self.eyeController.LeftEyePhiController(self.leftEyeTheta)
-                        self.eyeController.LeftEyeThetaController(self.leftEyeTheta)
+                        #self.eyeController.LeftEyePhiController(self.leftEyeTheta)
+                        #self.eyeController.LeftEyeThetaController(self.leftEyeTheta)
                         
                         roi_gray = gray[y:y+h, x:x+w]
                         roi_color = self.frame[y:y+h, x:x+w]
@@ -118,9 +159,11 @@ class VideoStream:
                             self.EyeRecognition(roi_gray, roi_color)
                         #print('faceRecognited True')
                 else:
+                    self.personFacingDracula = False
                     self.faceIterationDrops += 1
                     print('faceIterationDrops: ' + str(self.faceIterationDrops))
                     self.faceRecognited = False
+                    self.status = self.statusConstants['profileRecognition']
                     #print('faceRecognited False')
                 if self.displayVideo == True:
                     for (x,y,w,h) in faces:
